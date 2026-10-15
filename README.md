@@ -1,5 +1,5 @@
 # nodi
-NODI: assistente inteligente de automações. Especialista em Cloudfy, n8n, Evolution API e ferramentas integradas, ele esclarece dúvidas, diagnostica erros e ensina soluções práticas, passo a passo.
+NODI: assistente inteligente de automações (Google Gemini Notebook). Especialista em Cloudfy, n8n, Evolution API e ferramentas integradas, ele esclarece dúvidas, diagnostica erros e ensina soluções práticas, passo a passo.
 
 Tema:
 
@@ -37,4 +37,114 @@ Diretrizes de comportamento:
 
 Exemplos de perguntas respondidas pelo NODI:
 
+Pergunta 1-Como resolver um workflow do n8n que fica executando em loop?
 
+Resposta:
+
+Se o seu workflow no n8n está rodando em loop, ele fica executando continuamente sem parar, o que pode sobrecarregar o sistema e gerar custos altos com APIs[1].
+
+### 🚨 Ação de Emergência (se está em loop AGORA)
+
+1. **Pause o workflow imediatamente** no botão de pausa do n8n[2][3].
+2. **Cancele as execuções ativas** que ainda estão rodando na aba **Executions**[3].
+3. **Aplique uma das soluções abaixo** e teste com 1 a 2 mensagens antes de reativar completamente[3].
+
+---
+
+### Os 3 Principais Motivos e Como Resolver
+
+#### 1\. Bot Respondendo a Si Mesmo (Mais Comum)
+
+* **O Problema:** A resposta enviada pelo seu agente/bot dispara o gatilho (trigger) do próprio fluxo novamente, criando um ciclo infinito[4].
+* **Como Resolver:** Adicione um nó **IF** logo após o trigger para verificar se a mensagem não veio do próprio bot[4]:
+
+```
+{{ !$json.from_bot &amp;&amp; !$json.sender.includes('bot') }}
+
+```
+
+#### 2\. Agente Sem Limite de Conversas
+
+* **O Problema:** O agente de IA continua respondendo indefinidamente sem saber quando encerrar o atendimento[5].
+* **Como Resolver:**
+  * **Contador de mensagens:** No nó **IF**, defina um limite máximo de mensagens[5]:
+
+```
+{{ $json.message_count &lt; 10 }}
+
+```
+
+* **Palavras de parada:** Adicione uma verificação para encerrar caso o usuário envie termos como "tchau", "obrigado" ou "fim"[5]:
+
+```
+{{ !$json.message.toLowerCase().includes('tchau') &amp;&amp; !$json.message.toLowerCase().includes('obrigado') &amp;&amp; !$json.message.toLowerCase().includes('fim') }}
+
+```
+
+#### 3\. Webhook Disparando Novamente
+
+* **O Problema:** O webhook que recebe mensagens é acionado pela própria resposta que o n8n envia ao sistema[2].
+* **Como Resolver:**
+  * Filtre para ignorar mensagens enviadas pelo próprio sistema[2]:
+
+```
+{{ $json.webhook_source !== 'n8n' &amp;&amp; $json.sender !== 'sistema' }}
+
+```
+
+* Adicione um nó **Wait** com um delay de 2 a 3 segundos entre as respostas[2].
+
+---
+
+### 💡 Estrutura Básica Anti-Loop
+
+Para evitar que o problema ocorra em novos fluxos, mantenha sempre esta ordem de montagem:
+
+&gt; **Webhook → Filtro Anti-Loop → Processar IA → Enviar Resposta → Parar**
+
+Fonte: https://ajuda.cloudfy.live/pt-BR/articles/12429524-como-resolver-fluxos-que-ficam-em-loop-no-n8n
+
+Pergunta 2-Como conectar o Redis ao n8n utilizando a Cloudfy?
+
+Resposta:
+
+Para conectar o **Redis** ao seu **n8n** utilizando a infraestrutura da **Cloudfy**, siga o passo a passo a seguir:
+
+### 1\. Localize suas credenciais
+
+Antes de iniciar no n8n, obtenha os dados de conexão do seu Redis[1][2]:
+
+* **E-mail de boas-vindas**: enviado logo após a compra/ativação da sua infraestrutura[2][3].
+* **Console da Cloudfy**: acesse seu painel e navegue até **Infraestrutura → Serviços** (ou **Detalhes**)[2][3].
+
+---
+
+### 2\. Crie uma nova credencial no n8n
+
+1. Acesse o seu ambiente do **n8n**[1].
+2. No menu lateral ou na visão geral, vá em **Credenciais → Criar nova** (ou **Nova credencial**)[1].
+3. Na barra de pesquisa de integrações, procure por **Redis** e selecione-o[1].
+
+---
+
+### 3\. Configuração dos campos
+
+Preencha os campos da credencial com atenção para evitar erros de digitação ou espaços extras[1][2]:
+
+* **Nome**: defina um nome claro para identificar a credencial (ex.: `Cloudfy`)[1].
+* **Host**: insira o endereço de host do seu Redis fornecido pela Cloudfy[1][2].
+* **Porta**: insira a porta correspondente[2].
+* **User (Usuário)**: **deixe sempre em branco**[2].
+* **Senha (Password)**: insira a senha fornecida nas credenciais[2].
+
+---
+
+### 4\. Teste e salvamento
+
+1. No canto superior direito do modal de credencial, clique em **Test**[2].
+2. Se os dados estiverem corretos, uma mensagem de sucesso será exibida[2].
+3. Clique em **Save** para concluir[2].
+
+Fonte: https://ajuda.cloudfy.live/pt-BR/articles/12315422-conectando-o-redis-com-seu-n8n
+
+Link do Gemini Notebook: https://notebook.google.com/notebook/04a4ac66-00bd-46b9-b9f0-be49f2642531
